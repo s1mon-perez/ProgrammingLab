@@ -1,135 +1,176 @@
-#coding=utf-8
-# si calcoli la media mobile per una serie di valori in input.
-# la lunghezza della finestra sarà data dall'utente e sarà l'unico parametro della classe MovingAverage
-# la classe deve essere quindi inizializzata con questa parametro e poi contenere il metodo compute che
-# prende in input una lista di valori e ritorni una lista di valori corrispondenti alle medie mobili via via calcolate
-
-# le eccezioni devono essere alzate in caso di input non corretti o casi limite,
-# e devono essere istanze di una specifica classe ExamException che andrà quindi definita
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# coding=utf-8
+from datetime import datetime
+info = []
+lista_date = []
+passengers = []
+# ====================================================
+#           DEFINIZIONE CLASSE ERRORI
+# ====================================================
 
 class ExamException(Exception):
     pass
 
-class MovingAverage:
-    def __init__(self, finestra):
-        # il valore della finestra deve essere un intero, non sono ammessi float o stringhe
-        if not isinstance(finestra, int):
-            raise ExamException("Il valore della finestra non è un intero.")
-        # la finestra se ha valore intero, questo non può essere negativo
-        if finestra <1:
-            raise ExamException("La finestra non può aver valori negativi o pari a zero")
-        self.finestra = finestra
+# ====================================================
+#           DEFINIZIONE CLASSE CSV E SUO METODO
+# ====================================================
 
-    def compute(self, lista_input):
-        # controllo se parametro è una lista
-        if not isinstance(lista_input, list):
-            raise ExamException("Il parametro passato non è una lista.")
-        # controllo se lista è vuota
-        if len(lista_input) == 0:
-            raise ExamException("La lista è vuota. non si può calcolare la media mobile")
-        # controllo che finestra sia almeno pari a zero o superiore
-        if len(lista_input) < self.finestra:
-            raise ExamException("Non ci sono abbastanza elementi per sviluppare la media mobile")
-        # controllo se i valori nella lista siano tutti numerici, float o interi
-        for item in lista_input:
-            if not (isinstance(item, int) or isinstance(item, float)):
-                raise ExamException("Valori non numerici nella lista")
+class CSVTimeSeriesFile:
+    def __init__(self, name):
+        self.name = name
+        self.can_read = True
+        try:
+            my_file = open(self.name, 'r')
+            my_file.readline()
+        except Exception as e:
+            self.can_read = False
+            print('Errore in apertura del file: "{}"'.format(e))
 
-        # -o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
+    # definizione metodo get_data
+    def get_data(self):
+        # se non posso aprire il file ritorno errore ed esco
+        if not self.can_read:
+            print('Errore, file non aperto o illeggibile')
+            return None
+        else:
+            # apro il file
+            my_file = open(self.name, 'r')
+            range_lines = my_file.readlines()
+            # scorro le varie linee del file
+            for line in range_lines:
+                elements = line.split(',')
+                # salto intestazione
+                if 'date' in line:
+                    continue
+                # gestisco i doppioni delle date. con doppioni alzo errore
+                if elements[0] in lista_date:
+                    raise ExamException("ERRORE. Non si vuole duplicati di date")
+                else:
+                    lista_date.append(elements[0])
 
-        media_mobile = []
-        # creo variabile i utile per gli spostamenti della finestra
-        i=0
-        while i < len(lista_input) - self.finestra + 1:
-            # memorizza i gli elementi della finestra attuale in una lista
-            window_elem = lista_input[i: i + self.finestra]
-
-            # calcola la attuale media mobile
-            window_average = round(sum(window_elem) / self.finestra, 2)
-
-            # memorizza il risultato nella lista delle medie mobili
-            media_mobile.append(window_average)
-
-            # trasla la finestra di una posizione incrementando i
-            i += 1
-        return media_mobile
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# CALCOLARE LA DIFFERENZA DEGLI ELEMENTI DELLA LISTA
-# SI PRENDA IN INPUT UNA LISTA DI VALORI NUMERICI ED IN OUTPUT LA LISTA DELLE LORO DIFFERENZE
-# SI AGGIUNGA UN PARAMETRO RATIO CHE PERMETTA DI RISCALRE LE DIFFERENZE (VALORE DI DEFAULT = 1)
-#
-# CLASSE Diff():
-#     1)INIZIALIZZATA CON PARAMETRO OPZIONALE RATIO DI VALORE 1
-#     2) METODO COMPUTE CHE PRENDE IN INPUT UNA LISTA DI VALORI E RITORNA LA LISTA CON LE DIFFERENZE TRA I SINGOLI VALORI
-#
-# SI USI ISTANZA DI CLASSE PER LE ECCEZIONI
+                # INSERIRE CONTROLLO ORDINE CRESCENTE SU TIMESTAMP
+                # provo a convertire il valore dei passeggeri ad intero,
+                # se non è possibile gestisco errore
+                try:
+                    elements[-1] = int(elements[-1].strip())
+                except:
+                    print("Numero non convertibile a intero. Trasformato  in 0")
+                    elements[-1] = 0
+                if elements[-1] < 0:
+                    print("Numero negativo non accettato. Trasformato in 0")
+                    elements[-1] = 0
+                # inserisco i valori nelle due liste
+                passengers.append(elements[-1])
+                info.append(elements)
+        # chiudo file
+        my_file.close()
+        return info
 
 
-class Diff():
-    def __init__(self, ratio):
-        if not isinstance(ratio, int):
-            raise ExamException("Ratio non è un valore intero")
-        if ratio != 1:
-            raise ExamException("Ratio è diverso da 1")
-        if ratio == 0:
-            raise ExamException("Ratio è zero. Non ammesso perchè si genera una divisione per zero")
-        self.ratio = ratio
+# ====================================================================
+#           ISTANZIAMENTO CLASSE, CHIAMATA METODO, CHIAMATA FUNZIONE
+# ====================================================================
 
-    def compute(self, lista_input):
-        # controllo se parametro è una lista
-        if not isinstance(lista_input, list):
-            raise ExamException("Il parametro passato non è una lista.")
 
-        # controllo se lista è vuota
-        if len(lista_input) == 0:
-            raise ExamException("La lista è vuota. Non si può calcolare la differenza")
+file_name = r"/Users/simoneperessini/Desktop/data.csv"
+time_series_file = CSVTimeSeriesFile(name=file_name)
+time_series = time_series_file.get_data()
+print(time_series)
 
-        # controllo se lista ha meno di due elementi
-        if len(lista_input) < 2:
-            raise ExamException("La lista ha un solo elemento. Non si può calcolare la differenza")
+# LISTE DELLE ANNATE SENZA DUPLICATI
+anni = []
+lista_anni = []
+# inserisco nella lista anni tutti gli anni trovati nella lista info
+for x in lista_date:
+    if x not in anni:
+        anni.append(x[0:4])
 
-        # controllo se i valori nella lista siano tutti numerici, float o interi
-        for item in lista_input:
-            if not (isinstance(item, int) or isinstance(item, float)):
-                raise ExamException('Valori non numerici nella lista')
+# tengo solo gli anni univoci della lista anni
+for y in anni:
+    if y not in lista_anni:
+        lista_anni.append(y)
+
+# ====================================================================
+#           DEFINIZIONE FUNZIONE DI CALCOLO MEDIA PASSEGGERI
+# ====================================================================
+
+def compute_avg_monthly_difference(time_series, first_year, last_year):
+    if (type(first_year) != str) & (type(last_year) != str):
+        print("I due estremi intervalli non sono entrambi stringhe")
+    elif (first_year not in lista_anni) | (last_year not in lista_anni):
+        print("Almeno uno dei due estremi non è un valore contenuto nel file")
+    elif (int(first_year) > int(last_year)):
+        print("Estremo iniziale intervallo è superiore a estremo finale")
+    else:
+        incremento_pass = []
+        indice_inizio = anni.index(first_year)
+        # dal momento voglio incluso anche estremo finale
+        # converto in numero last_year, aggiungo 1 per avere posizione corretta
+        # lo ripasso a stringa e poi ad index che mi restituisce posizione
+        indice_fine = anni.index(str(int(last_year) + 1))
+        intervallo = info[indice_inizio: indice_fine]
+        delta_anni = int(last_year) - int(first_year)
 
         i = 0
-        lista_differenze = []
-        while i < len(lista_input) -1:
-            lista_differenze.append(float((lista_input[i+1] - lista_input[i])/self.ratio))
-            i += 1
-        return lista_differenze
+        diff = 0
+        if delta_anni == 0:
+            for p in intervallo:
+                incremento_pass.append(p[1])
 
-        # -o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
+        elif delta_anni == 1:
+            while i < 12:
+                if (intervallo[i + 12][1] != 0) & (intervallo[i][1] != 0):
+                    media = (float(intervallo[i + 12][1]) - float(intervallo[i][1]))
+                    diff += media
+                    incremento_pass.append(diff)
+                    diff = 0
+                    i += 1
+                else:
+                    incremento_pass.append(0)
 
 
+        elif delta_anni == 2:
+            while i < 12:
+                n_addizioni = 0
+                anno_attuale = n_addizioni * 12 + i
+                anno_succ = (n_addizioni + 1) * 12 + i
+                if (intervallo[anno_succ][1] != 0) & (intervallo[anno_attuale][1] != 0):
+                    while n_addizioni < delta_anni:
+                        media = (float(intervallo[(n_addizioni + 1) * 12 + i][1]) - float(
+                            intervallo[n_addizioni * 12 + i][1])) / delta_anni
+                        n_addizioni += 1
+                        diff += media
+                    incremento_pass.append(diff)
+                    diff = 0
+                    i += 1
+                else:
+                    incremento_pass.append(0)
+
+        elif delta_anni > 2:
+            while i < 12:
+                misurazioni = 0
+                for x in range(0, delta_anni):
+                    y = x * 12
+                    if intervallo[i + y][1] != 0:
+                        misurazioni += 1
+
+                if misurazioni < 2:
+                    incremento_pass.append(0)
+                else:
+                    n_addizioni = 0
+                    # anno_attuale = n_addizioni * 12 + i
+                    # anno_succ = (n_addizioni + 1) * 12 + i
+                    while n_addizioni < delta_anni:
+                        media = (float(intervallo[(n_addizioni + 1) * 12 + i][1]) - float(
+                            intervallo[n_addizioni * 12 + i][1])) / delta_anni
+                        n_addizioni += 1
+                        diff += media
+                    incremento_pass.append(diff)
+                    diff = 0
+                i += 1
+        return incremento_pass
 
 
-
-# creo lista vuota
-my_list = []
-ratio = 1
-print("Digita i valori della lista: (Q per uscire)")
-# prendo in input i valori da utente e li aggiungo alla lista
-user_input = input("")
-while(user_input.upper() != "Q"):
-    my_list.append(float(user_input))
-    user_input = input("")
-
-# creo variabile per la lunghezza della finestra e chiedo all'utente che valore vuole
-user_input_2 = input("digita il valore della finestra: ")
-lung_finestra = int(user_input_2)
-
-# istanzio la classe della media mobile
-moving_average = MovingAverage(lung_finestra)
-# variabile = applicazione metodo compute con lista come parametro
-result = moving_average.compute(my_list)
-# visualizzo in print la lista delle media calcolate
-print(result)
-
-# diff = Diff(ratio)
-# differenze = diff.compute(my_list)
-# print(differenze)
+first_year = "1954"
+last_year = "1958"
+variazioni_passeggeri = compute_avg_monthly_difference(time_series, first_year, last_year)
+print(variazioni_passeggeri)

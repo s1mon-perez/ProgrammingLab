@@ -32,7 +32,7 @@ class CSVTimeSeriesFile():
 
             if len(elements)>2:
                 raise ExamException("Ci sono valori in eccesso")
-                
+
             # salto intestazione
             if 'date' in line:
                 continue
@@ -55,6 +55,7 @@ class CSVTimeSeriesFile():
 
             if elements[1] < 0:
                 continue # negative
+           
             
 
             lista_finale.append(elements)
@@ -117,8 +118,8 @@ def compute_avg_monthly_difference(time_series, first_year, last_year):
 
         elif delta_anni == 1:
             while i < 12:
-                if (intervallo[i + 11][1] != 0) & (intervallo[i][1] != 0):
-                    media = (float(intervallo[i + 11][1]) - float(intervallo[i][1]))
+                if (intervallo[i + 12][1] != 0) & (intervallo[i][1] != 0):
+                    media = (float(intervallo[i + 12][1]) - float(intervallo[i][1]))
                     diff += media
                     incremento_pass.append(diff)
                     diff = 0

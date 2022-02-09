@@ -24,11 +24,15 @@ class CSVTimeSeriesFile():
         liste_timestamp = []
         try:
             my_file = open(self.name, 'r')
-            range_lines = my_file.readlines()
+            #range_lines = my_file.readlines()
         except Exception:
             raise ExamException("Errore in apertura file")
-        for line in range_lines:
+        for line in my_file:
             elements = line.split(',')
+
+            if len(elements)>2:
+                raise ExamException("Ci sono valori in eccesso")
+                
             # salto intestazione
             if 'date' in line:
                 continue
@@ -38,13 +42,19 @@ class CSVTimeSeriesFile():
                 liste_timestamp.append(anno_mese)
             except Exception:
                 continue
+            #
 
             try:
                 elements[1] = int(elements[1].strip())
-                if elements[1] < 0:
-                    elements[1] = 0
+                
             except IndexError:
                 elements[1] = 0
+            
+            except ValueError:
+                continue # float
+
+            if elements[1] < 0:
+                continue # negative
             
 
             lista_finale.append(elements)
@@ -59,7 +69,7 @@ class CSVTimeSeriesFile():
         for x in range(len(liste_timestamp) - 1):
             for y in range(x + 1, len(liste_timestamp)):
                 if liste_timestamp[x] == liste_timestamp[y]:
-                    print("Ci sono dei valori temporali duplicati nel file")
+                    raise ExamException("Ci sono dei valori temporali duplicati nel file")
 
         return lista_finale
 
@@ -80,8 +90,10 @@ def compute_avg_monthly_difference(time_series, first_year, last_year):
             if not isinstance(time_series[0], list):
                 raise ExamException('ERRORE, time series non è una lista di liste.')
 
-    if (type(first_year) != str) & (type(last_year) != str):
-        raise ExamException("I due estremi intervalli non sono entrambi stringhe")
+    if not isinstance(first_year, str):
+        raise ExamException("Estremo iniziale non è una stringa")
+    if not isinstance(last_year, str):
+        raise ExamException("estremo finale non è una stringa")
     elif (first_year not in lista_anni) | (last_year not in lista_anni):
         raise ExamException("Almeno uno dei due estremi non è un valore contenuto nel file")
     elif (int(first_year) > int(last_year)):
@@ -93,8 +105,9 @@ def compute_avg_monthly_difference(time_series, first_year, last_year):
         # converto in numero last_year, aggiungo 1 per avere posizione corretta
         # lo ripasso a stringa e poi ad index che mi restituisce posizione
 
-        indice_fine = lista_anni.index(str(int(last_year) + 1))
+        indice_fine = lista_anni.index(last_year)+12
         intervallo = time_series[indice_inizio: indice_fine]
+        print(intervallo)
         delta_anni = int(last_year) - int(first_year)
         i = 0
         diff = 0
@@ -104,8 +117,8 @@ def compute_avg_monthly_difference(time_series, first_year, last_year):
 
         elif delta_anni == 1:
             while i < 12:
-                if (intervallo[i + 12][1] != 0) & (intervallo[i][1] != 0):
-                    media = (float(intervallo[i + 12][1]) - float(intervallo[i][1]))
+                if (intervallo[i + 11][1] != 0) & (intervallo[i][1] != 0):
+                    media = (float(intervallo[i + 11][1]) - float(intervallo[i][1]))
                     diff += media
                     incremento_pass.append(diff)
                     diff = 0

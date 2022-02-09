@@ -169,7 +169,7 @@ def compute_avg_monthly_difference(time_series, first_year, last_year):
 
 # istanze della classe
 #file_name = r"/Users/simoneperessini/Desktop/data.csv"
-time_series_file = CSVTimeSeriesFile(name='data.csv')
-time_series = time_series_file.get_data()
-print(time_series)
-print(compute_avg_monthly_difference(time_series, '1949', '1951'))
+#time_series_file = CSVTimeSeriesFile(name='data.csv')
+#time_series = time_series_file.get_data()
+
+#print(compute_avg_monthly_difference(time_series, '1949', '1951'))
